@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlops-demo-serve
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlops-demo-serve
+  template:
+    metadata:
+      labels:
+        app: mlops-demo-serve
+    spec:
+      containers:
+        - name: server
+          image: ghcr.io/your-org/mlops-demo-serve:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: MODEL_DIR
+              value: "/model"
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: model-storage
+              mountPath: /model
+      volumes:
+        - name: model-storage
+          persistentVolumeClaim:
+            claimName: mlops-demo-model-pvc
