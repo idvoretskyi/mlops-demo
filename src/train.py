@@ -40,7 +40,10 @@ def train(epochs: int = 5, batch_size: int = 128, lr: float = 1e-3, model_dir: s
         try:
             from sklearn.datasets import load_breast_cancer
         except Exception as e:
-            raise RuntimeError("scikit-learn is required for DATA_SOURCE=sklearn_breast_cancer. Add it to requirements and rebuild.") from e
+            raise RuntimeError(
+                "scikit-learn is required for DATA_SOURCE=sklearn_breast_cancer. "
+                "Add it to requirements and rebuild."
+            ) from e
         ds_raw = load_breast_cancer()
         X = torch.tensor(ds_raw.data, dtype=torch.float32)
         y = torch.tensor(ds_raw.target, dtype=torch.long)
