@@ -32,7 +32,12 @@ def get_synthetic_dataset(n_samples: int = 10_000, n_features: int = 20):
     return TensorDataset(X, y)
 
 
-def train(epochs: int = 5, batch_size: int = 128, lr: float = 1e-3, model_dir: str = "/model"):
+def train(
+    epochs: int = 5,
+    batch_size: int = 128,
+    lr: float = 1e-3,
+    model_dir: str = "/model",
+):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     data_source = os.getenv("DATA_SOURCE", "synthetic").lower()
@@ -50,12 +55,20 @@ def train(epochs: int = 5, batch_size: int = 128, lr: float = 1e-3, model_dir: s
         n_features = X.shape[1]
         ds = TensorDataset(X, y)
         num_classes = len(torch.unique(y))
-        print(f"using_dataset=sklearn_breast_cancer n_samples={len(ds)} n_features={n_features} classes={num_classes}")
+        print(
+            "using_dataset=sklearn_breast_cancer "
+            f"n_samples={len(ds)} n_features={n_features} "
+            f"classes={num_classes}"
+        )
     else:
         n_features = 20
         ds = get_synthetic_dataset(n_samples=10_000, n_features=n_features)
         num_classes = 2
-        print(f"using_dataset=synthetic n_samples=10000 n_features={n_features} classes={num_classes}")
+        print(
+            "using_dataset=synthetic "
+            f"n_samples=10000 n_features={n_features} "
+            f"classes={num_classes}"
+        )
 
     train_loader = DataLoader(ds, batch_size=batch_size, shuffle=True)
 
@@ -92,12 +105,15 @@ def train(epochs: int = 5, batch_size: int = 128, lr: float = 1e-3, model_dir: s
     # Save model
     Path(model_dir).mkdir(parents=True, exist_ok=True)
     model_path = os.path.join(model_dir, "model.pt")
-    torch.save({
-        "model_state_dict": model.state_dict(),
-        "in_features": n_features,
-        "classes": num_classes,
-        "data_source": os.getenv("DATA_SOURCE", "synthetic"),
-    }, model_path)
+    torch.save(
+        {
+            "model_state_dict": model.state_dict(),
+            "in_features": n_features,
+            "classes": num_classes,
+            "data_source": os.getenv("DATA_SOURCE", "synthetic"),
+        },
+        model_path,
+    )
     print(f"model_saved path={model_path}")
 
 
