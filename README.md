@@ -2,7 +2,7 @@
 
 A tiny end-to-end MLOps tutorial that trains a PyTorch model, containerizes it, and serves predictions on Kubernetes with minimal setup.
 
-[![CI](https://github.com/your-org/mlops-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/mlops-demo/actions/workflows/ci.yml)
+[![CI](https://github.com/idvoretskyi/mlops-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/idvoretskyi/mlops-demo/actions/workflows/ci.yml)
 
 A minimal, beginner-friendly MLOps demo showing:
 - Training a tiny PyTorch model and saving an artifact
