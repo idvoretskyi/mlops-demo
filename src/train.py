@@ -6,20 +6,10 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-
-class SimpleNet(nn.Module):
-    def __init__(self, in_features: int = 20, hidden: int = 32, out_features: int = 2):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(in_features, hidden),
-            nn.ReLU(),
-            nn.Linear(hidden, hidden),
-            nn.ReLU(),
-            nn.Linear(hidden, out_features),
-        )
-
-    def forward(self, x):
-        return self.net(x)
+try:
+    from src.models import SimpleNet, CheckpointMeta, save_checkpoint  # when run as a script
+except ImportError:  # pragma: no cover
+    from models import SimpleNet, CheckpointMeta, save_checkpoint
 
 
 def get_synthetic_dataset(n_samples: int = 10_000, n_features: int = 20):
@@ -105,15 +95,12 @@ def train(
     # Save model
     Path(model_dir).mkdir(parents=True, exist_ok=True)
     model_path = os.path.join(model_dir, "model.pt")
-    torch.save(
-        {
-            "model_state_dict": model.state_dict(),
-            "in_features": n_features,
-            "classes": num_classes,
-            "data_source": os.getenv("DATA_SOURCE", "synthetic"),
-        },
-        model_path,
+    meta = CheckpointMeta(
+        in_features=n_features,
+        classes=num_classes,
+        data_source=os.getenv("DATA_SOURCE", "synthetic"),
     )
+    save_checkpoint(model, model_path, meta)
     print(f"model_saved path={model_path}")
 
 

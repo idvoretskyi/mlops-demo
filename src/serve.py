@@ -1,27 +1,17 @@
 import os
 from pathlib import Path
+from typing import Optional
 
 import torch
-from torch import nn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+try:
+    from src.models import load_checkpoint, CheckpointMeta, SimpleNet
+except ImportError:  # pragma: no cover
+    from models import load_checkpoint, CheckpointMeta, SimpleNet
+
 app = FastAPI(title="MLOps Demo Inference Service")
-
-
-class SimpleNet(nn.Module):
-    def __init__(self, in_features: int = 20, hidden: int = 32, out_features: int = 2):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(in_features, hidden),
-            nn.ReLU(),
-            nn.Linear(hidden, hidden),
-            nn.ReLU(),
-            nn.Linear(hidden, out_features),
-        )
-
-    def forward(self, x):
-        return self.net(x)
 
 
 class PredictRequest(BaseModel):
@@ -33,8 +23,8 @@ class PredictResponse(BaseModel):
     probabilities: list[float]
 
 
-MODEL = None
-META = None
+MODEL: Optional[SimpleNet] = None
+META: Optional[CheckpointMeta] = None
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -43,15 +33,12 @@ def load_model():
     global MODEL, META
     model_dir = os.getenv("MODEL_DIR", "/model")
     model_path = Path(model_dir) / "model.pt"
-    checkpoint = torch.load(model_path, map_location=DEVICE)
-    in_features = checkpoint.get("in_features", 20)
-    classes = checkpoint.get("classes", 2)
-    model = SimpleNet(in_features=in_features, out_features=classes)
-    model.load_state_dict(checkpoint["model_state_dict"])
-    model.to(DEVICE)
-    model.eval()
+    if not model_path.exists():
+        # Fail fast so container restarts and surfaces the missing model
+        raise RuntimeError(f"Model file not found at {model_path}")
+    model, meta = load_checkpoint(str(model_path), DEVICE)
     MODEL = model
-    META = {"in_features": in_features, "classes": classes}
+    META = meta
 
 
 @app.get("/healthz")
@@ -61,7 +48,14 @@ async def healthz():
 
 @app.post("/predict", response_model=PredictResponse)
 async def predict(req: PredictRequest):
-    assert MODEL is not None, "Model not loaded"
+    if MODEL is None or META is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    # Validate feature length
+    if len(req.features) != META.in_features:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Expected {META.in_features} features, got {len(req.features)}",
+        )
     x = torch.tensor(req.features, dtype=torch.float32, device=DEVICE).unsqueeze(0)
     with torch.no_grad():
         logits = MODEL(x)
